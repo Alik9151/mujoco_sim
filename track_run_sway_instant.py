@@ -131,6 +131,6 @@ def run_simulation(IMPULSE):
 
 
 
-for i in range(1):
-    IMPULSE = 1000.0 + 1000.0 * i
+for i in range(20):
+    IMPULSE = 100000.0 + 100.0 * i
     run_simulation(IMPULSE)
