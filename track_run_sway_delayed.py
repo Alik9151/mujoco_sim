@@ -24,6 +24,8 @@ def quat_to_euler(w, x, y, z):
     return math.degrees(roll), math.degrees(pitch), math.degrees(yaw)
 
 def run_simulation(IMPULSE):
+    IMPULSE_FORCE = IMPULSE / 0.005
+    print(IMPULSE_FORCE)
     xml_path = "trailer_sway.xml"
     model = mujoco.MjModel.from_xml_path(xml_path)
     data = mujoco.MjData(model)
@@ -32,9 +34,6 @@ def run_simulation(IMPULSE):
     drive_right = model.actuator("drive_right").id
 
     trailer_id = model.body("trailer").id
-
-    rear_point = data.body("trailer").xpos + \
-                data.body("trailer").xmat.reshape(3,3) @ np.array([-1.0, 0.0, 0.0])
 
 
     hitch_qpos_adr = model.joint("hitch").qposadr[0]
@@ -53,44 +52,49 @@ def run_simulation(IMPULSE):
     RATE_TOL = 0.1
     HOLD_TIME = .5
 
+    STEP_WAIT = 500
+
     with open(csv_filename, mode="w", newline="") as csv_file:
         writer = csv.writer(csv_file)
         writer.writerow(headers)
-
         with mujoco.viewer.launch_passive(model, data) as viewer:
-            step  = 0
+            step = 0
+            
+            impulse_force_mag = IMPULSE / model.opt.timestep
+            
             while viewer.is_running():
                 step += 1
-                if step == 300:
-                    force = np.array([0.0, IMPULSE, 0.0])   # +Y
-                    torque = np.zeros(3)
+                
+                data.qfrc_applied[:] = 0.0
 
+                if step == STEP_WAIT:
+                    R = data.body("trailer").xmat.reshape(3, 3)
+                    rear_point = (
+                        data.body("trailer").xpos +
+                        R @ np.array([-1.0, 0.0, 0.0])
+                    )
+
+                    force = np.array([0.0, impulse_force_mag, 0.0])
                     qfrc = np.zeros(model.nv)
-
+                    
                     mujoco.mj_applyFT(
                         model,
                         data,
                         force,
-                        torque,
+                        np.zeros(3),
                         rear_point,
                         trailer_id,
                         qfrc,
                     )
 
                     data.qfrc_applied[:] = qfrc
-
-                    mujoco.mj_step(model, data)
-
-                    data.qfrc_applied[:] = 0
-                    step += 1
-
-                    print(f"Applied impulse at {data.time} seconds")
-
+                    
+                    print(f"Applied impulse force of {impulse_force_mag:.2f} at {data.time:.2f} seconds")
 
                 step_start = time.time()
 
-                data.ctrl[drive_left] = 50.0
-                data.ctrl[drive_right] = 50.0
+                data.ctrl[drive_left] = 100.0
+                data.ctrl[drive_right] = 100.0
 
                 mujoco.mj_step(model, data)
 
@@ -124,19 +128,19 @@ def run_simulation(IMPULSE):
                     else:
                         stable_time = 0.0
 
-                    if stable_time >= HOLD_TIME and step > 300:
-                        print(f"Stabalized at {data.time}s")
+                    if stable_time >= HOLD_TIME and step > STEP_WAIT:
+                        print(f"Stabilized at {data.time:.2f}s")
                         break
 
                 prev_yaw = hitch_yaw
+                
                 if time_until_next_step > 0:
                     time.sleep(time_until_next_step)
-
-    print("Simulation finished. CSV file successfully saved at {csv_filename}")
-
+    print(f"Simulation finished. CSV file successfully saved at {csv_filename}")
 
 
 
-for i in range(20):
-    IMPULSE = 5000.0 + 100.0 * i
+
+for i in range(10):
+    IMPULSE = 500 + 250 * i
     run_simulation(IMPULSE)

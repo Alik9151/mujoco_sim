@@ -22,7 +22,7 @@
 
         <body name="car" pos="0 0 0.2">
             <freejoint name="car_root"/>
-            <geom name="car_body" type="box" size="0.6 0.3 0.1" mass="20" material="car_mat"/>
+            <geom name="car_body" type="box" size="0.6 0.3 0.1" mass="4300" material="car_mat"/>
 
             <body name="fl_wheel" pos="0.4 0.35 0">
                 <joint name="fl_hinge" type="hinge" axis="0 1 0"/>
@@ -44,7 +44,7 @@
 
             <body name="trailer" pos="-0.7 0 0">
                 <joint name="hitch" type="ball" limited="true" range="0 90" damping="0.1"/>
-                <inertial pos="-0.6 0 0" mass="15" diaginertia="0.5 0.5 0.5"/>
+                <inertial pos="-0.6 0 0" mass="2000" diaginertia="0.5 0.5 0.5"/>
 
                 <geom name="trailer_tongue" type="box" size="0.2 0.05 0.05" pos="-0.2 0 0" material="trailer_mat"/>
                 <geom name="trailer_body" type="box" size="0.4 0.3 0.1" pos="-0.6 0 0" material="trailer_mat"/>
