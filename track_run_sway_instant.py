@@ -58,6 +58,12 @@ def run_simulation(IMPULSE):
         writer.writerow(headers)
 
         with mujoco.viewer.launch_passive(model, data) as viewer:
+            #camera settings
+            car_id = model.body('car').id
+            viewer.cam.type = mujoco.mjtCamera.mjCAMERA_TRACKING
+            viewer.cam.trackbodyid = car_id
+
+
             force = np.array([0.0, IMPULSE, 0.0])   # +Y
             torque = np.zeros(3)
 

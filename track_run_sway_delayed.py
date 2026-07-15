@@ -58,6 +58,11 @@ def run_simulation(IMPULSE):
         writer = csv.writer(csv_file)
         writer.writerow(headers)
         with mujoco.viewer.launch_passive(model, data) as viewer:
+            #camera settings
+            car_id = model.body('car').id
+            viewer.cam.type = mujoco.mjtCamera.mjCAMERA_TRACKING
+            viewer.cam.trackbodyid = car_id
+            
             step = 0
             
             impulse_force_mag = IMPULSE / model.opt.timestep
