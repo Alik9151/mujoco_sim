@@ -62,7 +62,7 @@
     </worldbody>
 
     <actuator>
-        <velocity name="drive_left" joint="rl_hinge" kv="15" ctrlrange="0 100"/>
-        <velocity name="drive_right" joint="rr_hinge" kv="15" ctrlrange="0 100"/>
+        <velocity name="drive_left" joint="rl_hinge" kv="15" ctrlrange="0 500"/>
+        <velocity name="drive_right" joint="rr_hinge" kv="15" ctrlrange="0 500"/>
     </actuator>
 </mujoco>

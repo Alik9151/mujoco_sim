@@ -5,6 +5,8 @@ import numpy as np
 import mujoco
 import mujoco.viewer
 
+STEP_WAIT = 500
+
 def quat_to_euler(w, x, y, z):
     """Converts a quaternion (w, x, y, z) to Euler angles (roll, pitch, yaw) in degrees."""
     sinr_cosp = 2 * (w * x + y * z)
@@ -49,10 +51,8 @@ def run_simulation(IMPULSE):
     prev_yaw = None
     stable_time = 0.0
 
-    RATE_TOL = 0.1
+    RATE_TOL = 1
     HOLD_TIME = .5
-
-    STEP_WAIT = 500
 
     with open(csv_filename, mode="w", newline="") as csv_file:
         writer = csv.writer(csv_file)
@@ -122,6 +122,7 @@ def run_simulation(IMPULSE):
 
                 if prev_yaw is not None:
                     yaw_rate = (hitch_yaw - prev_yaw) / model.opt.timestep
+                    print(yaw_rate)
 
                     if abs(yaw_rate) < RATE_TOL:
                         stable_time += model.opt.timestep
@@ -137,10 +138,12 @@ def run_simulation(IMPULSE):
                 if time_until_next_step > 0:
                     time.sleep(time_until_next_step)
     print(f"Simulation finished. CSV file successfully saved at {csv_filename}")
+    
 
 
 
-
-for i in range(10):
-    IMPULSE = 500 + 250 * i
-    run_simulation(IMPULSE)
+if __name__ == "__main__":
+    for i in range(10):
+        IMPULSE = 1500 + 250 * i
+        run_simulation(IMPULSE)
+        time.sleep(.5)
