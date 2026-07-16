@@ -1,18 +1,18 @@
 <mujoco model="trailer_sway">
     <compiler angle="degree"/>
-    <option timestep="0.005" gravity="0 0 -9.81"/>
+    <option timestep="0.001" integrator = "RK4" gravity="0 0 -9.81" cone = "elliptic"/>
 
     <asset>
         <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="512"/>
         <texture name="grid" type="2d" builtin="checker" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" width="512" height="512"/>
-        <material name="grid" texture="grid" texrepeat="5 5" texuniform="true"/>
+        <material name="grid" texture="grid" texrepeat="25 25" texuniform="true"/>
         <material name="car_mat" rgba="0.2 0.6 0.8 1"/>
         <material name="trailer_mat" rgba="0.8 0.3 0.2 1"/>
         <material name="wheel_mat" rgba="0.1 0.1 0.1 1"/>
     </asset>
 
     <default>
-        <geom condim="3" friction="1 0.005 0.0001"/>
+        <geom condim="4" friction="1.2 0.01 0.0001"/>
         <joint damping="0.05"/>
     </default>
 
@@ -21,9 +21,12 @@
         <geom name="floor" type="plane" size="100 100 0.1" material="grid"/>
 
         <body name="car" pos="0 0 0.2">
+            <!-- <joint name="car_tx" type="slide" axis="1 0 0"/>
+            <joint name="car_tz" type="slide" axis="0 0 1"/>
+            <joint name="car_ry" type="hinge" axis="0 1 0"/> -->
             <freejoint name="car_root"/>
             <geom name="car_body" type="box" size="0.6 0.3 0.1" mass="4300" material="car_mat"/>
-
+            <site name = "front_pull_site" pos = ".6 0 0" quat="0.707 0 0.707 0"/>
             <body name="fl_wheel" pos="0.4 0.35 0">
                 <joint name="fl_hinge" type="hinge" axis="0 1 0"/>
                 <geom type="cylinder" size="0.15 0.05" zaxis="0 1 0" material="wheel_mat"/>
@@ -43,11 +46,10 @@
             </body>
 
             <body name="trailer" pos="-0.7 0 0">
-                <joint name="hitch" type="ball" limited="true" range="0 90" damping="0.1"/>
-                <inertial pos="-0.6 0 0" mass="2000" diaginertia="0.5 0.5 0.5"/>
-
-                <geom name="trailer_tongue" type="box" size="0.2 0.05 0.05" pos="-0.2 0 0" material="trailer_mat"/>
-                <geom name="trailer_body" type="box" size="0.4 0.3 0.1" pos="-0.6 0 0" material="trailer_mat"/>
+                <joint name="hitch" type="ball" limited="true" range="0 90" damping="0.000"/>
+                <!-- <inertial pos="-0.6 0 0" mass="2000" diaginertia="0.5 0.5 0.5"/> -->
+                <geom name="trailer_tongue" type="box" size="0.2 0.05 0.05" pos="-0.2 0 0" mass="100" material="trailer_mat"/>
+                <geom name="trailer_body" type="box" size="0.4 0.3 0.1" pos="-0.6 0 0" mass="4200" material="trailer_mat"/>
 
                 <body name="tl_wheel" pos="-0.4 0.35 0">
                     <joint name="tl_hinge" type="hinge" axis="0 1 0"/>
@@ -62,7 +64,10 @@
     </worldbody>
 
     <actuator>
-        <velocity name="drive_left" joint="rl_hinge" kv="15" ctrlrange="0 500"/>
-        <velocity name="drive_right" joint="rr_hinge" kv="15" ctrlrange="0 500"/>
+        <!-- <velocity name="drive_r_left" joint="rl_hinge" kv="15" ctrlrange="0 7000"/>
+        <velocity name="drive_r_right" joint="rr_hinge" kv="15" ctrlrange="0 7000"/>
+        <velocity name="drive_f_left" joint="fl_hinge" kv="15" ctrlrange="0 7000"/>
+        <velocity name="drive_f_right" joint="fr_hinge" kv="15" ctrlrange="0 7000"/> -->
+        <general name="front_pull" site="front_pull_site" gear="0 0 1 0 0 0" ctrlrange="0 20000"/>
     </actuator>
 </mujoco>

@@ -5,8 +5,9 @@ import numpy as np
 import mujoco
 import mujoco.viewer
 
-STEP_WAIT = 500
-
+STEP_WAIT = 1000
+SPEED = 100
+PULL_FORCE = 15000
 def quat_to_euler(w, x, y, z):
     """Converts a quaternion (w, x, y, z) to Euler angles (roll, pitch, yaw) in degrees."""
     sinr_cosp = 2 * (w * x + y * z)
@@ -32,8 +33,11 @@ def run_simulation(IMPULSE):
     model = mujoco.MjModel.from_xml_path(xml_path)
     data = mujoco.MjData(model)
 
-    drive_left = model.actuator("drive_left").id
-    drive_right = model.actuator("drive_right").id
+    # drive_r_left = model.actuator("drive_r_left").id
+    # drive_r_right = model.actuator("drive_r_right").id
+    # drive_f_left = model.actuator("drive_f_left").id
+    # drive_f_right = model.actuator("drive_f_right").id
+    front_pull = model.actuator("front_pull").id
 
     trailer_id = model.body("trailer").id
 
@@ -59,7 +63,11 @@ def run_simulation(IMPULSE):
         writer.writerow(headers)
         with mujoco.viewer.launch_passive(model, data) as viewer:
             step = 0
-            
+            #camera settings
+            car_id = model.body('car').id
+            viewer.cam.type = mujoco.mjtCamera.mjCAMERA_TRACKING
+            viewer.cam.trackbodyid = car_id
+
             impulse_force_mag = IMPULSE / model.opt.timestep
             
             while viewer.is_running():
@@ -67,7 +75,7 @@ def run_simulation(IMPULSE):
                 
                 data.qfrc_applied[:] = 0.0
 
-                if step == STEP_WAIT:
+                if step == STEP_WAIT and False:
                     R = data.body("trailer").xmat.reshape(3, 3)
                     rear_point = (
                         data.body("trailer").xpos +
@@ -93,8 +101,11 @@ def run_simulation(IMPULSE):
 
                 step_start = time.time()
 
-                data.ctrl[drive_left] = 100.0
-                data.ctrl[drive_right] = 100.0
+                # data.ctrl[drive_r_left] = SPEED
+                # data.ctrl[drive_r_right] = SPEED
+                # data.ctrl[drive_f_left] = SPEED
+                # data.ctrl[drive_f_right] = SPEED
+                data.ctrl[front_pull] = PULL_FORCE
 
                 mujoco.mj_step(model, data)
 
@@ -129,7 +140,7 @@ def run_simulation(IMPULSE):
                     else:
                         stable_time = 0.0
 
-                    if stable_time >= HOLD_TIME and step > STEP_WAIT:
+                    if stable_time >= HOLD_TIME and step > STEP_WAIT and False:
                         print(f"Stabilized at {data.time:.2f}s")
                         break
 
@@ -144,6 +155,6 @@ def run_simulation(IMPULSE):
 
 if __name__ == "__main__":
     for i in range(10):
-        IMPULSE = 1500 + 250 * i
+        IMPULSE = 30000 + 250 * i
         run_simulation(IMPULSE)
         time.sleep(.5)
