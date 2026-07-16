@@ -1,11 +1,11 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-IMPULSE = 100.0
+PULL = 100.0 #TODO: modify this to be whatever graph you want to plot.
 
 
 
-csv_filename = f"csvs/Trailer_Position_and_Orientation_Over_Time_For_Impulse_{IMPULSE}.csv"
+csv_filename = f"csvs/Trailer_Position_and_Orientation_Over_Time_For_Pull_{PULL}.csv"
 
 df = pd.read_csv(csv_filename)
 
@@ -13,8 +13,8 @@ df.columns = df.columns.str.strip()
 
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
 
-ax1.axvline(x=1.5, color='red', linestyle=':', linewidth=2, label='Impulse Applied')
-ax2.axvline(x=1.5, color='red', linestyle=':', linewidth=2, label='Impulse Applied')
+ax1.axvline(x=1.5, color='red', linestyle=':', linewidth=2, label='Pull Applied')
+ax2.axvline(x=1.5, color='red', linestyle=':', linewidth=2, label='Pull Applied')
 
 ax1.plot(df['time'], df['rel_trailer_x'], label='Hitch X', color='b')
 ax1.plot(df['time'], df['rel_trailer_y'], label='Hitch Y', color='g')

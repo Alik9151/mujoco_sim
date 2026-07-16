@@ -1,6 +1,6 @@
 import mujoco
 import mujoco.viewer
-
+#this file is old
 # 1. Load the model from the XML file
 # Make sure "trailer_sway.xml" is in the same directory as this script
 xml_path = "trailer_sway.xml"

@@ -4,7 +4,7 @@ import math
 import numpy as np
 import mujoco
 import mujoco.viewer
-
+#this file is old
 def quat_to_euler(w, x, y, z):
     """Converts a quaternion (w, x, y, z) to Euler angles (roll, pitch, yaw) in degrees."""
     sinr_cosp = 2 * (w * x + y * z)

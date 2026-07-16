@@ -4,7 +4,7 @@ import math
 import numpy as np
 import mujoco
 import mujoco.viewer
-
+#use this file
 START_PULL = 15000
 PULL_INCREMENT = 250
 
@@ -37,7 +37,7 @@ def run_simulation(PULL):
 
     hitch_qpos_adr = model.joint("hitch").qposadr[0]
 
-    csv_filename = f"csvs/Trailer_Position_and_Orientation_Over_Time_For_Impulse_{PULL}.csv"
+    csv_filename = f"csvs/Trailer_Position_and_Orientation_Over_Time_For_Pull_{PULL}.csv"
 
     headers = [
         "time", 
@@ -112,13 +112,12 @@ def run_simulation(PULL):
 
                 if prev_yaw is not None:
                     yaw_rate = (hitch_yaw - prev_yaw) / model.opt.timestep
-                    print(yaw_rate)
+                    #print(yaw_rate)
 
 
                     run_time += model.opt.timestep
 
                     if run_time >= RUN_TIME:
-                        print(f"Stabilized at {data.time:.2f}s")
                         break
 
                 prev_yaw = hitch_yaw
