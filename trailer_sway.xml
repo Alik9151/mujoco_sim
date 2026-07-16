@@ -21,7 +21,7 @@
         <geom name="floor" type="plane" size="100 100 0.1" material="grid"/>
 
         <body name="car" pos="0 0 0.2">
-            <!-- <joint name="car_tx" type="slide" axis="1 0 0"/>
+            <!-- THIS WAS FOR PUTTING ON A TRACK, NOT NEEDED <joint name="car_tx" type="slide" axis="1 0 0"/>
             <joint name="car_tz" type="slide" axis="0 0 1"/>
             <joint name="car_ry" type="hinge" axis="0 1 0"/> -->
             <freejoint name="car_root"/>
@@ -64,10 +64,6 @@
     </worldbody>
 
     <actuator>
-        <!-- <velocity name="drive_r_left" joint="rl_hinge" kv="15" ctrlrange="0 7000"/>
-        <velocity name="drive_r_right" joint="rr_hinge" kv="15" ctrlrange="0 7000"/>
-        <velocity name="drive_f_left" joint="fl_hinge" kv="15" ctrlrange="0 7000"/>
-        <velocity name="drive_f_right" joint="fr_hinge" kv="15" ctrlrange="0 7000"/> -->
         <general name="front_pull" site="front_pull_site" gear="0 0 1 0 0 0" ctrlrange="0 20000"/>
     </actuator>
 </mujoco>

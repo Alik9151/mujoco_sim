@@ -5,9 +5,9 @@ import numpy as np
 import mujoco
 import mujoco.viewer
 
-STEP_WAIT = 1000
-SPEED = 100
-PULL_FORCE = 15000
+START_PULL = 15000
+PULL_INCREMENT = 250
+
 def quat_to_euler(w, x, y, z):
     """Converts a quaternion (w, x, y, z) to Euler angles (roll, pitch, yaw) in degrees."""
     sinr_cosp = 2 * (w * x + y * z)
@@ -26,25 +26,18 @@ def quat_to_euler(w, x, y, z):
 
     return math.degrees(roll), math.degrees(pitch), math.degrees(yaw)
 
-def run_simulation(IMPULSE):
-    IMPULSE_FORCE = IMPULSE / 0.005
-    print(IMPULSE_FORCE)
+def run_simulation(PULL):
     xml_path = "trailer_sway.xml"
     model = mujoco.MjModel.from_xml_path(xml_path)
     data = mujoco.MjData(model)
 
-    # drive_r_left = model.actuator("drive_r_left").id
-    # drive_r_right = model.actuator("drive_r_right").id
-    # drive_f_left = model.actuator("drive_f_left").id
-    # drive_f_right = model.actuator("drive_f_right").id
-    front_pull = model.actuator("front_pull").id
 
-    trailer_id = model.body("trailer").id
+    front_pull = model.actuator("front_pull").id
 
 
     hitch_qpos_adr = model.joint("hitch").qposadr[0]
 
-    csv_filename = f"csvs/Trailer_Position_and_Orientation_Over_Time_For_Impulse_{IMPULSE}.csv"
+    csv_filename = f"csvs/Trailer_Position_and_Orientation_Over_Time_For_Impulse_{PULL}.csv"
 
     headers = [
         "time", 
@@ -53,10 +46,9 @@ def run_simulation(IMPULSE):
     ]
 
     prev_yaw = None
-    stable_time = 0.0
+    run_time = 0.0
 
-    RATE_TOL = 1
-    HOLD_TIME = .5
+    RUN_TIME = 15
 
     with open(csv_filename, mode="w", newline="") as csv_file:
         writer = csv.writer(csv_file)
@@ -68,7 +60,6 @@ def run_simulation(IMPULSE):
             viewer.cam.type = mujoco.mjtCamera.mjCAMERA_TRACKING
             viewer.cam.trackbodyid = car_id
 
-            impulse_force_mag = IMPULSE / model.opt.timestep
             
             while viewer.is_running():
                 step += 1
@@ -76,40 +67,12 @@ def run_simulation(IMPULSE):
                 data.qfrc_applied[:] = 0.0
                 front_pull_site_id = model.site("front_pull_site").id
 
-                if step == STEP_WAIT and False:
-                    R = data.body("trailer").xmat.reshape(3, 3)
-                    rear_point = (
-                        data.body("trailer").xpos +
-                        R @ np.array([-1.0, 0.0, 0.0])
-                    )
-
-                    force = np.array([0.0, impulse_force_mag, 0.0])
-                    qfrc = np.zeros(model.nv)
-                    
-                    mujoco.mj_applyFT(
-                        model,
-                        data,
-                        force,
-                        np.zeros(3),
-                        rear_point,
-                        trailer_id,
-                        qfrc,
-                    )
-
-                    data.qfrc_applied[:] = qfrc
-                    
-                    print(f"Applied impulse force of {impulse_force_mag:.2f} at {data.time:.2f} seconds")
-
                 step_start = time.time()
 
-                # data.ctrl[drive_r_left] = SPEED
-                # data.ctrl[drive_r_right] = SPEED
-                # data.ctrl[drive_f_left] = SPEED
-                # data.ctrl[drive_f_right] = SPEED
-                data.ctrl[front_pull] = 0
+                data.ctrl[front_pull] = 0 #this is the pull relative to the car itself - not what we want. We want to apply a force relative to the world, so we will use mj_applyFT instead
 
                 bumper_world_pos = data.site_xpos[front_pull_site_id]
-                global_force = np.array([PULL_FORCE, 0.0, 0.0])
+                global_force = np.array([PULL, 0.0, 0.0])
                 global_torque = np.array([0.0, 0.0, 0.0])
                 qfrc = np.zeros(model.nv)
                 mujoco.mj_applyFT( 
@@ -122,7 +85,7 @@ def run_simulation(IMPULSE):
                     qfrc,
                 )
                 data.qfrc_applied[:] = qfrc
-                
+
                 mujoco.mj_step(model, data)
 
                 sim_time = data.time
@@ -151,12 +114,10 @@ def run_simulation(IMPULSE):
                     yaw_rate = (hitch_yaw - prev_yaw) / model.opt.timestep
                     print(yaw_rate)
 
-                    if abs(yaw_rate) < RATE_TOL:
-                        stable_time += model.opt.timestep
-                    else:
-                        stable_time = 0.0
 
-                    if stable_time >= HOLD_TIME and step > STEP_WAIT and False:
+                    run_time += model.opt.timestep
+
+                    if run_time >= RUN_TIME:
                         print(f"Stabilized at {data.time:.2f}s")
                         break
 
@@ -171,6 +132,6 @@ def run_simulation(IMPULSE):
 
 if __name__ == "__main__":
     for i in range(10):
-        IMPULSE = 30000 + 250 * i
-        run_simulation(IMPULSE)
+        pull = START_PULL + PULL_INCREMENT * i
+        run_simulation(pull)
         time.sleep(.5)
