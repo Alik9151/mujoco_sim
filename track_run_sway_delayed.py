@@ -74,6 +74,7 @@ def run_simulation(IMPULSE):
                 step += 1
                 
                 data.qfrc_applied[:] = 0.0
+                front_pull_site_id = model.site("front_pull_site").id
 
                 if step == STEP_WAIT and False:
                     R = data.body("trailer").xmat.reshape(3, 3)
@@ -105,8 +106,23 @@ def run_simulation(IMPULSE):
                 # data.ctrl[drive_r_right] = SPEED
                 # data.ctrl[drive_f_left] = SPEED
                 # data.ctrl[drive_f_right] = SPEED
-                data.ctrl[front_pull] = PULL_FORCE
+                data.ctrl[front_pull] = 0
 
+                bumper_world_pos = data.site_xpos[front_pull_site_id]
+                global_force = np.array([PULL_FORCE, 0.0, 0.0])
+                global_torque = np.array([0.0, 0.0, 0.0])
+                qfrc = np.zeros(model.nv)
+                mujoco.mj_applyFT( 
+                    model,
+                    data,
+                    global_force,
+                    global_torque,
+                    bumper_world_pos,
+                    car_id,
+                    qfrc,
+                )
+                data.qfrc_applied[:] = qfrc
+                
                 mujoco.mj_step(model, data)
 
                 sim_time = data.time
