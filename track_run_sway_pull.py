@@ -60,10 +60,7 @@ def run_simulation(PULL):
             viewer.cam.trackbodyid = car_id
             
             step = 0
-            #camera settings
-            car_id = model.body('car').id
-            viewer.cam.type = mujoco.mjtCamera.mjCAMERA_TRACKING
-            viewer.cam.trackbodyid = car_id
+
 
             
             while viewer.is_running():
