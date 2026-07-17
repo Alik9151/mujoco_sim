@@ -5,8 +5,10 @@ import numpy as np
 import mujoco
 import mujoco.viewer
 #use this file
-START_PULL = 15000
-PULL_INCREMENT = 250
+START_PULL = float(input("Enter the desired starting pull force in Netwons: "))
+PULL_INCREMENT = float(input("Enter the desired pull force increment in Netwons: "))
+RUN_TIMES = int(input("Enter the number of runs you want to perform: "))
+RUN_TIME = float(input("Enter the desired run time in seconds: "))
 
 def quat_to_euler(w, x, y, z):
     """Converts a quaternion (w, x, y, z) to Euler angles (roll, pitch, yaw) in degrees."""
@@ -48,7 +50,6 @@ def run_simulation(PULL):
     prev_yaw = None
     run_time = 0.0
 
-    RUN_TIME = 15
 
     with open(csv_filename, mode="w", newline="") as csv_file:
         writer = csv.writer(csv_file)
@@ -132,7 +133,7 @@ def run_simulation(PULL):
 
 
 if __name__ == "__main__":
-    for i in range(10):
+    for i in range(RUN_TIMES):
         pull = START_PULL + PULL_INCREMENT * i
         run_simulation(pull)
         time.sleep(.5)

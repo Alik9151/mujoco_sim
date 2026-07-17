@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-PULL = 100.0 #TODO: modify this to be whatever graph you want to plot.
+PULL = float(input("Enter the pull force for the simulation you want to graph: "))
 
 
 
