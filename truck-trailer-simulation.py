@@ -45,7 +45,7 @@ import mujoco
 import mujoco.viewer
 import numpy as np
 
-XML_PATH = "block_pickup_trailer.xml"
+XML_PATH = "truck-trailer.xml"
 
 # ---------------- geometry knobs ----------------
 TONGUE_LEN = 1.0        # m, ball -> deck front edge
@@ -94,7 +94,7 @@ PIVOT_SPRING_K = 11000.0  # N/m, lateral spring pulling the tow point to y=0
 PIVOT_SPRING_C = 3500.0   # N*s/m, lateral damping on the tow point
 
 # ---------------- planar / no-weight-shift mode ----------------
-PLANAR_MODE = True      # True: no vertical-axis motion at all. No fore/aft
+PLANAR_MODE = False      # True: no vertical-axis motion at all. No fore/aft
                          # or side-to-side weight shift, constant normal
                          # forces, same friction coefficient on every tire.
 PLANAR_TIRE_MU = 1.0     # friction coefficient applied to ALL six tires
