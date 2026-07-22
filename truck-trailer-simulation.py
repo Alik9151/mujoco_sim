@@ -607,4 +607,5 @@ if __name__ == "__main__":
         print(f"\n=== Run {i + 1}/{N_RUNS} — {DISTURBANCE} mag {mag:g}, "
               f"cargo {mass:g} kg @ {off:+.2f} m ===")
         results.append(run_simulation(mag, off, mass, i))
+        time.sleep(.5)
     plot_results(results)
