@@ -387,7 +387,7 @@ def run_simulation(magnitude, cargo_offset, cargo_mass, run_idx):
             phase_idx, step_in_phase = 0, 0
             viewer.cam.type = mujoco.mjtCamera.mjCAMERA_TRACKING
             viewer.cam.trackbodyid = model.body("car").id
-
+            viewer.cam.distance = 20
             while viewer.is_running() and phase_idx < len(schedule):
                 step_start = time.time()
                 phase = schedule[phase_idx][0]
