@@ -1,0 +1,192 @@
+<mujoco model="rc_car_trailer_v2">
+  <!--
+      RC car + trailer, geometry from the "Double_Axle_Assembly" Onshape
+      export (units = meters).  CORRECTED ROLES:
+        * the wheeled double-axle chassis in the CAD (steering, diffs,
+          reComputer J4012, lidar) is the TOW CAR
+        * the rear frame ("Double Axle Trailer" + rail rods) is the
+          TRAILER - it has NO wheels in the CAD
+
+      CAR (all visual geometry from CAD meshes):
+        wheelbase 0.288 m, half-track ~0.109 m
+        tires r = 0.0455 m (from CAD), rigidly mounted (no suspension
+        DOF in sim), front steer / rear drive
+        body origin = midpoint of the two axles, at CAD y=0 plane
+        (0.0531 m above ground)
+
+      TRAILER (frame mesh from CAD):
+        single axle line 0.247 m behind the hitch pivot, stub ends at
+        y = +-0.100; coupler tower at the front, cargo rails on top
+        WHEELS ARE NOT IN THE CAD: modeled as plain cylinders,
+        74 mm DIAMETER (r = 0.037), width 26 mm, centers y = +-0.113.
+        NOTE: the CAD axle height (55 mm) matches ~110 mm wheels, so
+        with 74 mm wheels the trailer settles ~4 deg nose-up, exactly
+        as the physical trailer will. The ball hitch absorbs this.
+        Adjustable PAYLOAD box on the deck between the rails - slide it
+        aft / add mass to strengthen sway.
+
+      Meshes are decimated + small fasteners culled; VISUAL ONLY
+      (contype/conaffinity 0). Collisions & contact use primitives.
+
+      SENSORS/ACTUATORS/MARKERS: identical names to previous models
+      (imu_car, imu_trailer, hitch_angle, drive_left/right,
+      steer_left/right, tow_eye, CAR_ROOT_START/END, TRAILER_START/END,
+      CAR_END) so existing Python tooling keeps working.
+  -->
+  <compiler angle="degree" meshdir="assets"/>
+  <option timestep="0.001" gravity="0 0 -9.81" integrator="implicitfast"/>
+  <visual><global offwidth="1920" offheight="1080"/></visual>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="512"/>
+    <texture name="grid" type="2d" builtin="checker" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" width="512" height="512"/>
+    <material name="grid" texture="grid" texrepeat="10 10" texuniform="true"/>
+    <material name="car_mat" rgba="0.62 0.64 0.67 1"/>
+    <material name="trailer_mat" rgba="0.55 0.57 0.62 1"/>
+    <material name="wheel_mat" rgba="0.10 0.10 0.10 1"/>
+    <material name="tire_mat" rgba="0.08 0.08 0.08 1"/>
+    <material name="payload_mat" rgba="0.85 0.7 0.3 1"/>
+    <material name="lane_mat" rgba="0.95 0.8 0.06 1"/>
+
+    <mesh name="car_frame" file="car_frame.stl"/>
+    <mesh name="m_fl" file="fl_w.stl"/>
+    <mesh name="m_fr" file="fr_w.stl"/>
+    <mesh name="m_rl" file="rl_w.stl"/>
+    <mesh name="m_rr" file="rr_w.stl"/>
+    <mesh name="trailer_frame" file="trailer_frame.stl"/>
+  </asset>
+
+  <default>
+    <geom condim="3" friction="1.2 0.005 0.0001" contype="1" conaffinity="1"/>
+    <default class="visual">
+      <geom contype="0" conaffinity="0" mass="0" group="2"/>
+    </default>
+    <default class="tire">
+      <geom type="cylinder" material="tire_mat" friction="1.3 0.005 0.0001"
+            contype="2" conaffinity="2" priority="1"/>
+    </default>
+    <default class="spin">
+      <joint type="hinge" axis="0 1 0" damping="0.002" armature="1e-5"/>
+    </default>
+  </default>
+
+  <worldbody>
+    <light pos="0 0 4" dir="0 0 -1" directional="true"/>
+    <geom name="floor" type="plane" size="100 40 0.1" material="grid" contype="3" conaffinity="3"/>
+
+    <!-- ===== LANE: 0.60 m wide, yellow lines both sides, no collision ===== -->
+    <geom name="lane_line_left"  type="box" size="100 0.008 0.0005" pos="0  0.30 0.001" material="lane_mat" contype="0" conaffinity="0"/>
+    <geom name="lane_line_right" type="box" size="100 0.008 0.0005" pos="0 -0.30 0.001" material="lane_mat" contype="0" conaffinity="0"/>
+
+    <!-- ================= RC CAR (CAD chassis + CAD wheels) ================= -->
+    <!-- CAR_ROOT_START -->
+    <body name="car" pos="0 0 0.0531">
+      <freejoint name="car_root"/>
+    <!-- CAR_ROOT_END -->
+      <inertial pos="0 0 0.02" mass="5.0" diaginertia="0.040 0.075 0.092"/>
+      <geom name="car_frame_vis" class="visual" type="mesh" mesh="car_frame" material="car_mat"/>
+      <!-- chassis collision (approx CAD envelope) -->
+      <geom name="car_chassis_col" type="box" size="0.190 0.095 0.030" pos="0 0 0.025" mass="0" group="3"/>
+      <geom name="car_elec_col"    type="box" size="0.085 0.050 0.045" pos="-0.02 0 0.095" mass="0" group="3"/>
+      <site name="imu_car" pos="0 0 0.02" size="0.008" rgba="1 0 0 0.5"/>
+      <site name="tow_eye" pos="0.1439 0 -0.0076" size="0.008" rgba="0 1 0 0.8"/>
+
+      <!-- front: steer knuckle + CAD wheel, rigid mount (no suspension) -->
+      <body name="fl_knuckle" pos="0.1439 0.1095 -0.0076">
+        <joint name="fl_steer" type="hinge" axis="0 0 1" range="-35 35" damping="0.05"/>
+        <geom type="sphere" size="0.010" mass="0.02" contype="0" conaffinity="0" material="car_mat"/>
+        <body name="fl_wheel">
+          <joint name="fl_hinge" class="spin"/>
+          <inertial pos="0 0 0" mass="0.12" diaginertia="8.2e-5 1.24e-4 8.2e-5"/>
+          <geom name="fl_tire" class="tire" size="0.0455 0.0225" zaxis="0 1 0"/>
+          <geom class="visual" type="mesh" mesh="m_fl" material="wheel_mat"/>
+        </body>
+      </body>
+      <body name="fr_knuckle" pos="0.1439 -0.1095 -0.0076">
+        <joint name="fr_steer" type="hinge" axis="0 0 1" range="-35 35" damping="0.05"/>
+        <geom type="sphere" size="0.010" mass="0.02" contype="0" conaffinity="0" material="car_mat"/>
+        <body name="fr_wheel">
+          <joint name="fr_hinge" class="spin"/>
+          <inertial pos="0 0 0" mass="0.12" diaginertia="8.2e-5 1.24e-4 8.2e-5"/>
+          <geom name="fr_tire" class="tire" size="0.0455 0.0225" zaxis="0 1 0"/>
+          <geom class="visual" type="mesh" mesh="m_fr" material="wheel_mat"/>
+        </body>
+      </body>
+
+      <!-- rear (driven), rigid mount -->
+      <body name="rl_wheel" pos="-0.1439 0.1086 -0.0076">
+        <joint name="rl_hinge" class="spin"/>
+        <inertial pos="0 0 0" mass="0.12" diaginertia="8.2e-5 1.24e-4 8.2e-5"/>
+        <geom name="rl_tire" class="tire" size="0.0455 0.0225" zaxis="0 1 0"/>
+        <geom class="visual" type="mesh" mesh="m_rl" material="wheel_mat"/>
+      </body>
+      <body name="rr_wheel" pos="-0.1439 -0.1086 -0.0076">
+        <joint name="rr_hinge" class="spin"/>
+        <inertial pos="0 0 0" mass="0.12" diaginertia="8.2e-5 1.24e-4 8.2e-5"/>
+        <geom name="rr_tire" class="tire" size="0.0455 0.0225" zaxis="0 1 0"/>
+        <geom class="visual" type="mesh" mesh="m_rr" material="wheel_mat"/>
+      </body>
+
+      <!-- =============== TRAILER (CAD frame + 74 mm wheels) =============== -->
+      <!-- body origin = hitch pivot at the coupler tower, 0.118 m above ground -->
+      <!-- TRAILER_START -->
+      <body name="trailer" pos="-0.1857 0 0.065">
+        <joint name="hitch" type="ball" limited="true" range="0 45" damping="0.005"/>
+        <inertial pos="-0.24 0 -0.045" mass="0.8" diaginertia="0.0035 0.012 0.014"/>
+        <site name="imu_trailer" pos="-0.25 0 -0.03" size="0.008" rgba="1 0 0 0.5"/>
+
+        <!-- visual: CAD trailer frame (coupler tower, deck, rails, axle tube) -->
+        <geom name="trailer_frame_vis" class="visual" type="mesh" mesh="trailer_frame" material="trailer_mat"/>
+
+        <!-- collision primitives -->
+        <geom name="trailer_deck_col" type="box" size="0.155 0.100 0.0125"
+              pos="-0.243 0 -0.0525" mass="0" group="3"/>
+        <geom name="trailer_tongue_col" type="capsule" size="0.008"
+              fromto="0.005 0 -0.005  -0.100 0 -0.050" mass="0" contype="0" conaffinity="0"/>
+
+        <!-- PAYLOAD: adjustable mass on the deck (drives sway).
+             Slide aft (more negative x) / add mass to destabilize;
+             forward of the axle (x > -0.2475) to stabilize. -->
+        <geom name="payload" type="box" size="0.050 0.048 0.035"
+              pos="-0.320 0 -0.005" mass="0.6" material="payload_mat"/>
+
+        <!-- 74 mm DIAMETER wheels (r = 0.037) on the CAD axle line;
+             not present in the CAD, so modeled as plain cylinders -->
+        <body name="tl_wheel" pos="-0.2475 0.113 -0.063">
+          <joint name="tl_hinge" class="spin"/>
+          <inertial pos="0 0 0" mass="0.05" diaginertia="2.0e-5 3.4e-5 2.0e-5"/>
+          <geom name="tl_tire" class="tire" size="0.037 0.013" zaxis="0 1 0" friction="0.9 0.005 0.0001"/>
+        </body>
+        <body name="tr_wheel" pos="-0.2475 -0.113 -0.063">
+          <joint name="tr_hinge" class="spin"/>
+          <inertial pos="0 0 0" mass="0.05" diaginertia="2.0e-5 3.4e-5 2.0e-5"/>
+          <geom name="tr_tire" class="tire" size="0.037 0.013" zaxis="0 1 0" friction="0.9 0.005 0.0001"/>
+        </body>
+      </body>
+      <!-- TRAILER_END -->
+    </body>
+    <!-- CAR_END -->
+  </worldbody>
+
+  <actuator>
+    <velocity name="drive_left"  joint="rl_hinge" kv="2.0" ctrlrange="0 150"/>
+    <velocity name="drive_right" joint="rr_hinge" kv="2.0" ctrlrange="0 150"/>
+    <position name="steer_left"  joint="fl_steer" kp="15" kv="0.8" ctrlrange="-0.61 0.61"/>
+    <position name="steer_right" joint="fr_steer" kp="15" kv="0.8" ctrlrange="-0.61 0.61"/>
+  </actuator>
+
+  <sensor>
+    <!-- car IMU -->
+    <accelerometer name="car_imu_accel" site="imu_car"/>
+    <gyro name="car_imu_gyro" site="imu_car"/>
+    <framequat name="car_imu_quat" objtype="site" objname="imu_car"/>
+    <!-- trailer IMU -->
+    <accelerometer name="trailer_imu_accel" site="imu_trailer"/>
+    <gyro name="trailer_imu_gyro" site="imu_trailer"/>
+    <framequat name="trailer_imu_quat" objtype="site" objname="imu_trailer"/>
+    <!-- trailer angle relative to car (ball joint quaternion) -->
+    <ballquat name="hitch_angle" joint="hitch"/>
+    <framepos name="trailer_pos" objtype="body" objname="trailer"/>
+    <frameyaxis name="trailer_yaxis" objtype="body" objname="trailer"/>
+  </sensor>
+</mujoco>
