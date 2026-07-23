@@ -38,12 +38,16 @@ MODES
 import csv
 import math
 import os
+import platform
 import time
-
+if platform.system() == "Darwin": # fix plotting for running on macos
+    import matplotlib
+    matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import mujoco
 import mujoco.viewer
 import numpy as np
+
 
 XML_PATH = "truck-trailer.xml"
 
