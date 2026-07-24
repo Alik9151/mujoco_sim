@@ -77,14 +77,14 @@ HITCH_DAMPING = 0.005
 # ---------------- aerodynamics ----------------
 # MuJoCo's built-in fluid model: every body gets quadratic drag + viscous
 # damping computed from its equivalent-inertia box, relative to WIND.
-AIR_DENSITY = 0          # kg/m^3 (sea-level air; set 0.0 for vacuum = no drag; set 1.204 for drag)
-AIR_VISCOSITY = 0        # Pa*s   (air; set 0 for no damping; set 1.8e-5 for air damping)
+AIR_DENSITY = 1.204      # kg/m^3 (sea-level air; set 0.0 for vacuum = no drag; set 1.204 for drag)
+AIR_VISCOSITY = 1.8e-5   # Pa*s   (air; set 0 for no damping; set 1.8e-5 for air damping)
 WIND = (0.0, 0.0, 0.0)   # m/s ambient wind, world frame. e.g. (0, -2, 0) is
                          # a steady 2 m/s crosswind from the left - a
                          # continuous alternative to the impulsive "gust"
 
 # ---------------- experiment knobs ----------------
-SPEED_CTRL = 176.0        # rad/s wheel target (~4.0 m/s)
+SPEED_CTRL = 210.0        # rad/s wheel target (~4.0 m/s)
 DISTURBANCE = "swerve"   # "swerve" or "gust"
 
 N_RUNS = 3               # how many simulations to run
@@ -422,11 +422,17 @@ def run_simulation(magnitude, cargo_offset, cargo_mass, run_idx):
                 + [("record", int(MAX_RECORD / dt))])
 
     os.makedirs("csvs", exist_ok=True)
+    simNum = 1
+    while os.path.exists(f"csvs/RC_Sway_{mode_tag()}_{DISTURBANCE}_run{run_idx + 1}"
+            f"_mag{magnitude:g}_v{SPEED_CTRL:.0f}"
+            f"_cargo{cargo_mass:g}kg_off{cargo_offset:+.3f}"
+            f"_mu{TRAILER_TIRE_MU}_simNum{simNum}.csv"):
+        simNum += 1
     csv_filename = (
         f"csvs/RC_Sway_{mode_tag()}_{DISTURBANCE}_run{run_idx + 1}"
         f"_mag{magnitude:g}_v{SPEED_CTRL:.0f}"
         f"_cargo{cargo_mass:g}kg_off{cargo_offset:+.3f}"
-        f"_mu{TRAILER_TIRE_MU}.csv"
+        f"_mu{TRAILER_TIRE_MU}_simNum{simNum}.csv"
     )
     headers = ["time", "hitch_yaw_deg", "hitch_lat_force", "trailer_y",
                "car_yaw_deg", "car_roll_deg", "car_y", "tl_grip", "tr_grip",
@@ -654,8 +660,12 @@ def plot_results(runs):
                 a.axvspan(s, e, color="red", alpha=0.3, lw=0)
 
         fig.tight_layout()
+        simNum = 1
+        while os.path.exists(f"plots/run{i + 1}_{tag}_{DISTURBANCE}"
+                              f"_mag{r['magnitude']:g}_speed{r['speed_ctrl']:g}_simNum{simNum}.png"):
+            simNum += 1
         out = (f"plots/run{i + 1}_{tag}_{DISTURBANCE}"
-               f"_mag{r['magnitude']:g}_speed{r['speed_ctrl']:g}.png")
+               f"_mag{r['magnitude']:g}_speed{r['speed_ctrl']:g}_simNum{simNum}.png")
         fig.savefig(out, dpi=120)
         print(f"Plot saved at {out}")
     plt.show()
