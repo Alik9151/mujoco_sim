@@ -4,6 +4,11 @@ RC-SCALE port of the full-size block-truck script, for use with
 rc-truck-trailer.xml (CAD meshes in ./assets).
 
 - Lane: 0.60 m wide, centered on y=0, road runs along +x. Lane center = y=0.
+- AIR RESISTANCE: MuJoCo's fluid model is enabled (AIR_DENSITY /
+  AIR_VISCOSITY knobs). Every body feels quadratic drag + viscous damping
+  based on its equivalent-inertia box, measured relative to the ambient
+  WIND vector - so WIND=(0,-2,0) gives a steady 2 m/s crosswind on top of
+  the impulsive swerve/gust disturbances. AIR_DENSITY=0 restores vacuum.
 - IMUs on car and trailer (accel, gyro, orientation quat) + hitch sensor
   (trailer angle relative to car).
 - control_function() below is YOUR hook: it receives only the sensor data
@@ -48,6 +53,7 @@ import csv
 import math
 import os
 import platform
+import re
 import time
 if platform.system() == "Darwin": # fix plotting for running on macos
     import matplotlib
@@ -68,8 +74,17 @@ CARGO_HALF = (0.050, 0.048, 0.035)   # payload box half-sizes (fits the rails)
 TRAILER_TIRE_MU = 0.9
 HITCH_DAMPING = 0.005
 
+# ---------------- aerodynamics ----------------
+# MuJoCo's built-in fluid model: every body gets quadratic drag + viscous
+# damping computed from its equivalent-inertia box, relative to WIND.
+AIR_DENSITY = 0          # kg/m^3 (sea-level air; set 0.0 for vacuum = no drag; set 1.204 for drag)
+AIR_VISCOSITY = 0        # Pa*s   (air; set 0 for no damping; set 1.8e-5 for air damping)
+WIND = (0.0, 0.0, 0.0)   # m/s ambient wind, world frame. e.g. (0, -2, 0) is
+                         # a steady 2 m/s crosswind from the left - a
+                         # continuous alternative to the impulsive "gust"
+
 # ---------------- experiment knobs ----------------
-SPEED_CTRL = 160.0        # rad/s wheel target (~4.0 m/s)
+SPEED_CTRL = 176.0        # rad/s wheel target (~4.0 m/s)
 DISTURBANCE = "swerve"   # "swerve" or "gust"
 
 N_RUNS = 3               # how many simulations to run
@@ -256,6 +271,14 @@ def build_model(cargo_offset, cargo_mass):
     end = xml.index("<!-- TRAILER_END -->") + len("<!-- TRAILER_END -->")
     xml = xml[:start] + trailer_xml(cargo_offset, cargo_mass) + xml[end:]
 
+    # aerodynamics: override the fluid attributes on the <option> tag with
+    # the knobs above (works regardless of the values written in the XML)
+    xml = re.sub(r'density="[^"]*"', f'density="{AIR_DENSITY}"', xml, count=1)
+    xml = re.sub(r'viscosity="[^"]*"',
+                 f'viscosity="{AIR_VISCOSITY}"', xml, count=1)
+    xml = re.sub(r'wind="[^"]*"',
+                 f'wind="{WIND[0]} {WIND[1]} {WIND[2]}"', xml, count=1)
+
     # from_xml_string resolves meshdir against the CWD, not the XML file:
     # make it absolute so the script works from anywhere
     assets_abs = os.path.join(
@@ -292,7 +315,7 @@ def build_model(cargo_offset, cargo_mass):
         xml = xml.replace("<actuator>", eq, 1)
         xml = xml.replace("</actuator>",
             '  <velocity name="leader_drive" joint="leader_x" kv="200" '
-            'ctrlrange="0 8"/>\n  </actuator>')
+            'ctrlrange="0 12"/>\n  </actuator>')
 
     if PLANAR_MODE:
         # car root: x / y / yaw only -> no heave, pitch, or roll anywhere
@@ -441,7 +464,7 @@ def run_simulation(magnitude, cargo_offset, cargo_mass, run_idx):
                     steer, speed = control_function(
                         read_sensors(model, data), dt, ctrl_state)
                     steer = max(-MAX_STEER, min(MAX_STEER, steer))
-                    speed = max(0.0, min(150.0, speed))
+                    speed = max(0.0, min(220.0, speed))
                     data.ctrl[sl] = steer
                     data.ctrl[sr] = steer
                     data.ctrl[dl] = speed

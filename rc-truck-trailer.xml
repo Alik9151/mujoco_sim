@@ -34,7 +34,12 @@
       CAR_END) so existing Python tooling keeps working.
   -->
   <compiler angle="degree" meshdir="assets"/>
-  <option timestep="0.001" gravity="0 0 -9.81" integrator="implicitfast"/>
+  <!-- density/viscosity enable MuJoCo's fluid (air) model: quadratic drag
+       + viscous damping on every body, computed from its equivalent-inertia
+       box, relative to the ambient "wind" vector. density=0 -> vacuum.
+       The python script overrides these three attributes at build time. -->
+  <option timestep="0.001" gravity="0 0 -9.81" integrator="implicitfast"
+          density="1.204" viscosity="1.8e-5" wind="0 0 0"/>
   <visual><global offwidth="1920" offheight="1080"/></visual>
 
   <asset>
@@ -169,8 +174,8 @@
   </worldbody>
 
   <actuator>
-    <velocity name="drive_left"  joint="rl_hinge" kv="2.0" ctrlrange="0 150"/>
-    <velocity name="drive_right" joint="rr_hinge" kv="2.0" ctrlrange="0 150"/>
+    <velocity name="drive_left"  joint="rl_hinge" kv="2.0" ctrlrange="0 220"/>
+    <velocity name="drive_right" joint="rr_hinge" kv="2.0" ctrlrange="0 220"/>
     <position name="steer_left"  joint="fl_steer" kp="15" kv="0.8" ctrlrange="-0.61 0.61"/>
     <position name="steer_right" joint="fr_steer" kp="15" kv="0.8" ctrlrange="-0.61 0.61"/>
   </actuator>
